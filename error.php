@@ -44,7 +44,8 @@ function sendBomb(){
 	header("Cache-Control: public");
 	usleep(100000);
         header("Content-Length: ".filesize('10G.gzip'));
-	usleep(100000);
+	usleep(200000);
+
         syslog(LOG_INFO, "Zip Bomb delivered user_agent='".$_SERVER['HTTP_USER_AGENT']."' url='".$_SERVER['REQUEST_URI']."' victim=".$_SERVER['REMOTE_ADDR']);
         //send the gzipped file to the client
         readfile('10G.gzip');
@@ -83,6 +84,11 @@ function isBadURL($url){
 		strpos($u, 'wordpress') !== false ||
 		strpos($u, 'stssys.htm') !== false ||
 		strpos($u, '/administrator/') !== false ||
+		strpos($u, '/sql') !== false ||
+		strpos($u, '/db/') !== false ||
+		strpos($u, '/admin') !== false ||
+		strpos($u, '/mysql') !== false ||
+		strpos($u, '/shopdb') !== false ||
 		startsWith($u, "http")
 	){
 		return true;
@@ -308,7 +314,7 @@ function isBadAgent($a){
 			break;
 		case 's':
 			$check_arr = array(
-				"Salt", "Sample", "SAPO", "Sauger", "savvy", "SBIder", "SBP", "SCAgent", "scan", "SCEJ_", "Sched",
+				"Salt", "Sample", "SAPO", "Sauger", "savvy", "SBIder", "SBP", "SCAgent", "scan", "SCEJ_", "Scanbot", "Sched",
 				"Schizo", "Schlong", "Schmo", "Scooter", "Scorp", "Scout", "ScoutOut", "SCrawl", "screen", "script",
 				"SearchExpress", "searchhippo", "Searchme", "searchpreview", "searchterms", "Second.Street.Research",
 				"Security.Kol", "Seekbot", "Seeker", "Sega", "Sensis", "Sept", "Serious", "Sezn", "Shai", "Share",
