@@ -1,13 +1,46 @@
 <?php
-$agent = strtolower($_SERVER['HTTP_USER_AGENT']);
-$url   = strtolower($_SERVER['REQUEST_URI']);
+
+$GLOBALS['ua']    = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : "";
+$agent            = strtolower($GLOBALS['ua']);
+$url              = strtolower($_SERVER['REQUEST_URI']);
+
+$_strpos_jorgee = strpos($agent,'jorgee');
+
+if($_strpos_jorgee !== false) {
+	error_reporting(E_ALL);
+	/*if (filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP)) {
+		echo "BLOCKED";
+		$command = '/var/www/html/safe_exec/fail2ban-client -vvv set nginx-botsearch banip "'.$_SERVER['REMOTE_ADDR'].'"';
+
+		syslog(LOG_INFO, "Fail2Bann'ed user_agent='".$GLOBALS['ua']."' url='".$_SERVER['REQUEST_URI']."' victim=".$_SERVER['REMOTE_ADDR']);
+		
+		$file = popen($command,"r");
+		if ($file == false) {
+            		syslog(LOG_INFO, "F2B ($cmd): FAIL");
+			exit;
+        	}else{
+			while (!feof($file)) {
+				$line = fgets($file);
+				syslog(LOG_INFO, "F2B ($command): ".$line);
+			}		
+			pclose($file);
+		}
+		
+		exit();
+	}*/
+	usleep(1000000*5);
+      	sendBomb();
+      	exit();
+}
 
 if (
 	strpos($agent, 'mirall') === false &&
-	(
-		strpos($agent, 'Jorgee') !== false ||
+	(	
+		$agent === "" ||
+		startswith($url,'/wp-') || startswith($url,'/sql') || startswith($url,'/w00tw00t') || 
 		strpos($agent, 'nikto') !== false || strpos($agent, 'sqlmap') !== false || 
-		startswith($url,'/wp-') || startswith($url,'/wordpress') || startswith($url,'/wp/') ||
+		startswith($url,'/wordpress') || startswith($url,'/wp/') ||
+		$_strpos_jorgee !== false ||
 		isBadURL($url) || isBadAgent($agent)
 	)
 )
@@ -28,12 +61,12 @@ function sendBomb(){
         //Turn off output buffering
         if (ob_get_level()) ob_end_clean();
 
-        syslog(LOG_INFO, "Zip Bomb begin of delay user_agent='".$_SERVER['HTTP_USER_AGENT']."' url='".$_SERVER['REQUEST_URI']."' victim=".$_SERVER['REMOTE_ADDR']);
+        syslog(LOG_INFO, "Zip Bomb begin of delay user_agent='".$GLOBALS['ua']."' url='".$_SERVER['REQUEST_URI']."' victim=".$_SERVER['REMOTE_ADDR']);
 	usleep(900000);
         //prepare the client to recieve GZIP data. This will not be suspicious
         //since most web servers use GZIP by default
         http_response_code(200);
-        syslog(LOG_INFO, "Zip Bomb first response user_agent='".$_SERVER['HTTP_USER_AGENT']."' url='".$_SERVER['REQUEST_URI']."' victim=".$_SERVER['REMOTE_ADDR']);
+        syslog(LOG_INFO, "Zip Bomb first response user_agent='".$GLOBALS['ua']."' url='".$_SERVER['REQUEST_URI']."' victim=".$_SERVER['REMOTE_ADDR']);
 	usleep(100000);
 	header("Connection: keep-alive");
 	usleep(100000);
@@ -46,7 +79,7 @@ function sendBomb(){
         header("Content-Length: ".filesize('10G.gzip'));
 	usleep(200000);
 
-        syslog(LOG_INFO, "Zip Bomb delivered user_agent='".$_SERVER['HTTP_USER_AGENT']."' url='".$_SERVER['REQUEST_URI']."' victim=".$_SERVER['REMOTE_ADDR']);
+        syslog(LOG_INFO, "Zip Bomb delivered user_agent='".$GLOBALS['ua']."' url='".$_SERVER['REQUEST_URI']."' victim=".$_SERVER['REMOTE_ADDR']);
         //send the gzipped file to the client
         readfile('10G.gzip');
 }
@@ -66,6 +99,7 @@ function isBadURL($url){
 	}
 
 	if(
+		strpos($u, 'w00tw00t') !== false ||
 		strpos($u, 'a2billing') !== false ||
 		strpos($u, 'pma') !== false ||
 		strpos($u, 'myadmin') !== false ||
@@ -74,14 +108,11 @@ function isBadURL($url){
 		strpos($u, 'admin/i18n') !== false ||
 		strpos($u, 'recordings') !== false ||
 		strpos($u, 'CherryWeb') !== false ||
-		strpos($u, 'w00tw00t') !== false ||
 		strpos($u, 'command.php') !== false ||
 		strpos($u, '.action') !== false ||
 		strpos($u, 'xmlrpc.php') !== false ||
 		strpos($u, 'proxyradar.com') !== false ||
 		strpos($u, '.aspx') !== false ||
-		strpos($u, '/wp') !== false ||
-		strpos($u, 'wordpress') !== false ||
 		strpos($u, 'stssys.htm') !== false ||
 		strpos($u, '/administrator/') !== false ||
 		strpos($u, '/sql') !== false ||
@@ -89,7 +120,15 @@ function isBadURL($url){
 		strpos($u, '/admin') !== false ||
 		strpos($u, '/mysql') !== false ||
 		strpos($u, '/shopdb') !== false ||
-		startsWith($u, "http")
+		strpos($u, '/install/') !== false ||
+		strpos($u, '/joomla/') !== false ||
+		startsWith($u, "http") ||
+		startsWith($u, "/readme") ||
+		strpos($u, '\x05\x02') !== false ||
+		strpos($u, 'HNAP1/') !== false ||
+		strpos($u, 'passwd') !== false ||
+		strpos($u, '/wp') !== false ||
+		strpos($u, 'wordpress') !== false
 	){
 		return true;
 	}
@@ -179,6 +218,9 @@ function isBadAgent($a){
 			);
 			break;
 		case 'f':
+			if (startsWith($a, 'feedly')){
+				return false;
+			}
 			$check_arr = array(
 				"FairAd", "Fake", "fang", "fast", "fastbug", "fastlwspider", "FavOrg", "Favorites.Sweeper", "faxo", "FDM_1",
 				"fdse", "feed24", "feeddisc", "feedhub", "fetch", "FEZhead", "filan", "fileboo", "FileHound", "fimap",
